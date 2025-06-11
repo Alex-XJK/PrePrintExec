@@ -2,6 +2,38 @@
 
 A lightweight, non-intrusive debugging tool that uses AST transformation to print debug information before executing your Python code.
 
+## Why PPE?
+Traditional comments help users understand code, but they are ignored at runtime. 
+With PPE, your comments become actionable debug messages, making your code both readable and insightful during execution. 
+This is especially valuable in complex functions 
+-- PPE shows exactly which step is running and where errors occur, saving time during debugging.
+```python
+from ppe import ppe_debug
+
+def risky_division(x, y):
+    return x / y
+
+@ppe_debug
+def process_data(data):
+    total = sum(data)  ## Summing data
+    avg = total / len(data)  ## Calculating average
+    # Many other complex operations...
+    result = risky_division(avg, 0)  ## -
+    return result
+
+
+process_data([1, 2, 3])
+
+# Output:
+# PPE: Summing data
+# PPE: Calculating average
+# PPE: result = risky_division(avg, 0)
+# Traceback (most recent call last):
+#   ...
+# ZeroDivisionError: float division by zero
+```
+With PPE, you see exactly which step triggers the error, making debugging faster and clearer.
+
 ## Installation
 
 ```bash

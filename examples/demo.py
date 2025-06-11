@@ -70,27 +70,34 @@ if __name__ == "__main__":
     print(f"divide_numbers(10, 2): {divide_numbers(10, 2)}")
     print(f"divide_numbers(10, 0): {divide_numbers(10, 0)}")
 
+    # Demo 5: Variable Value Inspection
+    print("\n5. Variable Value Inspection:")
+
+
+    @ppe_debug
+    def variable_demo():
+        x = 10
+        y = 20  ## @after:x,y
+        z = x + y  ## @after:x,y,z
+        return z
+
+
+    result = variable_demo()
+    print(f"variable_demo result: {result}")
+
+    # Demo 6: Before vs After inspection
+    print("\n6. Before vs After Inspection:")
+
+
+    @ppe_debug
+    def before_after_demo():
+        existing_var = 0
+        existing_var = 100 ## @before:existing_var
+        new_var = existing_var * 10  ## @before:existing_var,new_var
+        return new_var
+
+
+    result = before_after_demo()
+    print(f"before_after_demo result: {result}")
+
     print("\n=== PPE Demo Complete ===")
-
-    # Usage instructions
-    print("""
-Usage Instructions:
-1. Add @ppe_debug decorator above any function you want to debug
-2. Add `## comments` with your debug message after the supported statement
-3. Use `## -` to print the actual statement being executed
-4. Remove the decorator when you no longer need debugging
-
-Supported Statements:
-- Assignments (=, +=, -=, etc.)
-- Function calls and expressions
-- if/elif/else statements  
-- for/while loops
-- return statements
-- break/continue statements
-
-Benefits:
-- Non-intrusive debugging (no permanent code changes)
-- Easy to enable/disable by adding/removing decorator
-- Clear debug output with PPE prefix
-- Maintains original code structure and functionality
-""")

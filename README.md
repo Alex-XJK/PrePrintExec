@@ -27,26 +27,55 @@ result = my_function()
 ## Features
 
 - 🎯 **Non-intrusive**: Just add a decorator
-- 🔧 **Two debug modes**: Custom messages or statement echoing
+- 🔧 **Multiple debug modes**: Custom messages, statement echoing, or variable inspection
 - 🚀 **Zero dependencies**: Uses only Python standard library
 - 🧹 **Clean**: Remove decorator to disable debugging
 - 🔍 **Comprehensive**: Works with all Python statements
 
 ## Usage
 ### Custom Debug Messages
+Use `## comments` to print your custom debug messages.
 ```python
 @ppe_debug
 def calculate():
     result = 10 + 5  ## Adding two numbers
     return result
+
+# Output:
+# PPE: Adding two numbers
 ```
 
 ### Statement Echoing
+Use `## -` to echo the actual statement being executed.
 ```python
 @ppe_debug
 def calculate():
     result = 10 + 5  ## -
     return result
+
+# Output:
+# PPE: result = 10 + 5
+```
+
+### Variable Inspection
+Use `## @var1,var2` to inspect variable values (prints after execution)  
+Use `## @before:var1,var2` to inspect variables before execution   
+Use `## @after:var1,var2` to explicitly inspect variables after execution  
+Note that if some variables are not defined at the time of inspection, they will trigger an error.
+```python
+@ppe_debug
+def calculate():
+    a = 1  ## @a
+    b = 2  ## @after:b
+    c = a + b  ## @before:a,b
+    d = 10  ## @before:d
+    return c
+
+# Output:
+# PPE: [After] a=1
+# PPE: [After] b=2
+# PPE: [Before] a=1, b=2
+# PPE: Variable inspection failed
 ```
 
 ## License

@@ -31,6 +31,10 @@ class PPETransformer(ast.NodeTransformer):
                     )
                     return [print_node, node]
 
+                elif comment_part.startswith('@'):
+                    # Case 3: Variable value inspection
+                    return self.handle_variable_inspection(node, comment_part)
+
                 elif comment_part:
                     # Case 1: Print the comment string
                     print_node = ast.Expr(
@@ -43,6 +47,93 @@ class PPETransformer(ast.NodeTransformer):
                     return [print_node, node]
 
         return node
+
+    def handle_variable_inspection(self, node, comment_part):
+        """Handle variable inspection comments like @var1,var2 or @before:var1,var2"""
+        # Parse the comment: @var1,var2 or @before:var1,var2 or @after:var1,var2
+        inspection_part = comment_part[1:]  # Remove '@'
+
+        # Check for before/after prefix
+        print_before = False
+        if inspection_part.startswith('before:'):
+            print_before = True
+            var_part = inspection_part[7:]  # Remove 'before:'
+        elif inspection_part.startswith('after:'):
+            print_before = False
+            var_part = inspection_part[6:]  # Remove 'after:'
+        else:
+            # Default behavior: print after
+            print_before = False
+            var_part = inspection_part
+
+        # Parse variable names
+        var_names = [v.strip() for v in var_part.split(',') if v.strip()]
+
+        if not var_names:
+            return node
+
+        # Create the variable inspection print statement
+        print_node = self.create_variable_inspection_print(var_names, print_before)
+
+        if print_before:
+            return [print_node, node]  # Print before execution
+        else:
+            return [node, print_node]  # Print after execution (default)
+
+    def create_variable_inspection_print(self, var_names, print_before=False):
+        """Create a try-catch print statement for variable inspection"""
+
+        # Build the JoinedStr (f-string) AST node
+        if print_before:
+            joined_str_values = [ast.Constant(value="PPE: [Before] ")]
+        else:
+            joined_str_values = [ast.Constant(value="PPE: [After] ")]
+
+        for i, var in enumerate(var_names):
+            if i > 0:
+                joined_str_values.append(ast.Constant(value=", "))
+            joined_str_values.append(ast.Constant(value=f"{var}="))
+            joined_str_values.append(ast.FormattedValue(
+                value=ast.Name(id=var, ctx=ast.Load()),
+                conversion=-1,
+                format_spec=None
+            ))
+
+        # Create the try block with print statement
+        try_body = [
+            ast.Expr(
+                value=ast.Call(
+                    func=ast.Name(id='print', ctx=ast.Load()),
+                    args=[ast.JoinedStr(values=joined_str_values)],
+                    keywords=[]
+                )
+            )
+        ]
+
+        # Create the except block for error handling
+        except_body = [
+            ast.Expr(
+                value=ast.Call(
+                    func=ast.Name(id='print', ctx=ast.Load()),
+                    args=[ast.Constant(value="PPE: Variable inspection failed")],
+                    keywords=[]
+                )
+            )
+        ]
+
+        # Return the complete try-except statement
+        return ast.Try(
+            body=try_body,
+            handlers=[
+                ast.ExceptHandler(
+                    type=ast.Name(id='NameError', ctx=ast.Load()),
+                    name=None,
+                    body=except_body
+                )
+            ],
+            orelse=[],
+            finalbody=[]
+        )
 
     def visit_Assign(self, node):
         """Transform assignment statements."""

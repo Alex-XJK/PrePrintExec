@@ -3,36 +3,16 @@
 A lightweight, non-intrusive debugging tool that uses AST transformation to print debug information before executing your Python code.
 
 ## Why PPE?
-Traditional comments help users understand code, but they are ignored at runtime. 
-With PPE, your comments become actionable debug messages, making your code both readable and insightful during execution. 
-This is especially valuable in complex functions 
--- PPE shows exactly which step is running and where errors occur, saving time during debugging.
-```python
-from ppe import ppe_debug
+In real-world development, inserting print statements is one of the most common debugging techniques. But doing so often clutters the codebase, requires cleanup before commits, and introduces friction in the development cycle. PPE (PrePrintExec) offers a clean, elegant alternative: reuse your existing inline comments as actionable debug logs.
 
-def risky_division(x, y):
-    return x / y
+With just a decorator, PPE automatically prints your comment string before executing each line—turning what used to be dead documentation into live, contextual insight. This helps you:
 
-@ppe_debug
-def process_data(data):
-    total = sum(data)  ## Summing data
-    avg = total / len(data)  ## Calculating average
-    # Many other complex operations...
-    result = risky_division(avg, 0)  ## -
-    return result
+- 🧠 Understand complex workflows step by step
+- 🔎 Instantly locate which operation failed during runtime
+- 🧼 Avoid littering your code with temporary print() statements
+- ⚙️ Toggle debugging on/off cleanly with a single annotation
 
-
-process_data([1, 2, 3])
-
-# Output:
-# PPE: Summing data
-# PPE: Calculating average
-# PPE: result = risky_division(avg, 0)
-# Traceback (most recent call last):
-#   ...
-# ZeroDivisionError: float division by zero
-```
-With PPE, you see exactly which step triggers the error, making debugging faster and clearer.
+Unlike traditional logging tools, PPE does not require you to write explicit logging code. It uses your comments—already written for humans—and makes them available at runtime when you need them most.
 
 ## Installation
 
@@ -109,6 +89,17 @@ def calculate():
 # PPE: [Before] a=1, b=2
 # PPE: Variable inspection failed
 ```
+
+## For Researchers & Advanced Developers
+At a glance, PPE might appear to be a simple utility that converts inline comments into `print()` statements. However, due to how the Python compiler works, this functionality requires much deeper intervention.
+
+In Python, comments are **discarded during the parsing stage** and are **not included in the Abstract Syntax Tree (AST)**, which is what most static analysis or transformation tools operate on. To retain access to the comment strings, PPE synchronizes the parsed AST (`ast` module from Python’s standard library) with the original source lines by matching line numbers, effectively reattaching comments to the corresponding AST nodes.
+
+Rather than modifying source code textually or relying on deprecated tools like `lib2to3`, PPE implements a custom `ast.NodeTransformer` that walks and transforms the AST in a **semantically-aware** and **structurally sound** manner. The transformed tree is then dynamically compiled and executed, preserving all scope, bindings, and runtime behavior.
+
+To make this accessible, we wrap the entire transformation and execution logic inside a lightweight decorator (`@ppe_debug`), so developers can instrument their functions non-invasively—without code duplication or string parsing hacks.
+
+This project serves not just as a debugging tool, but as a **practical demonstration of compiler-inspired instrumentation** using Python's AST. If you're interested in programming languages, interpreters, or tooling, PPE is a compact but meaningful example of source-level augmentation with runtime effects.
 
 ## License
 MIT License - see LICENSE file for details.

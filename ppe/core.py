@@ -35,6 +35,17 @@ class PPETransformer(ast.NodeTransformer):
                     # Case 3: Variable value inspection
                     return self.handle_variable_inspection(node, comment_part)
 
+                elif comment_part.startswith('try:'):
+                    # Case 4: Try-wrapped execution
+                    stmt_text = line.split('##')[0].strip()
+                    try_msg = comment_part[4:].strip() or f"Attempting '{stmt_text}'"
+                    return self.handle_try_wrapping(node, try_msg)
+
+                elif comment_part.startswith('checkpoint:'):
+                    # Case 5: Checkpoint marker
+                    checkpoint_msg = comment_part[11:].strip() or f"Line {line_no}"
+                    return self.handle_checkpoint(node, checkpoint_msg)
+
                 elif comment_part:
                     # Case 1: Print the comment string
                     print_node = ast.Expr(
@@ -47,6 +58,66 @@ class PPETransformer(ast.NodeTransformer):
                     return [print_node, node]
 
         return node
+
+    @staticmethod
+    def handle_try_wrapping(node, msg):
+        """Wrap the statement in a try-except block with an optional pre-comment."""
+        pre_comment = ast.Expr(
+            value=ast.Call(
+                func=ast.Name(id='print', ctx=ast.Load()),
+                args=[ast.Constant(value=f"PPE: {msg}")],
+                keywords=[]
+            )
+        )
+
+        except_body = [
+            ast.Expr(
+                value=ast.Call(
+                    func=ast.Name(id='print', ctx=ast.Load()),
+                    args=[
+                        ast.BinOp(
+                            left=ast.Constant(value="PPE: Try-wrapped statement failed: "),
+                            op=ast.Add(),
+                            right=ast.Call(
+                                func=ast.Name(id='str', ctx=ast.Load()),
+                                args=[ast.Name(id='e', ctx=ast.Load())],
+                                keywords=[]
+                            )
+                        )
+                    ],
+                    keywords=[]
+                )
+            )
+        ]
+
+        try_wrapper = ast.Try(
+            body=[node],
+            handlers=[
+                ast.ExceptHandler(
+                    type=ast.Name(id='Exception', ctx=ast.Load()),
+                    name='e',
+                    body=except_body
+                )
+            ],
+            orelse=[],
+            finalbody=[]
+        )
+
+        return [pre_comment, try_wrapper]
+
+    @staticmethod
+    def handle_checkpoint(node, msg):
+        """Print a checkpoint message before the statement."""
+        checkpoint_node = ast.Expr(
+            value=ast.Call(
+                func=ast.Name(id='print', ctx=ast.Load()),
+                args=[
+                    ast.Constant(value=f"PPE: ===== Checkpoint: {msg} =====")
+                ],
+                keywords=[]
+            )
+        )
+        return [checkpoint_node, node]
 
     def handle_variable_inspection(self, node, comment_part):
         """Handle variable inspection comments like @var1,var2 or @before:var1,var2"""
@@ -80,7 +151,8 @@ class PPETransformer(ast.NodeTransformer):
         else:
             return [node, print_node]  # Print after execution (default)
 
-    def create_variable_inspection_print(self, var_names, print_before=False):
+    @staticmethod
+    def create_variable_inspection_print(var_names, print_before=False):
         """Create a try-catch print statement for variable inspection"""
 
         # Build the JoinedStr (f-string) AST node

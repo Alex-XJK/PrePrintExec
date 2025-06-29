@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="ppe-debug",
-    version="1.0.1",
+    version="1.1.0",
     author="Alex Jiakai Xu",
     author_email="jiakai.xu@columbia.edu",
-    description="PrePrintExec - AST-based debugging tool that prints before execution",
+    description="PrePrintExec - A lightweight, non-intrusive debugging tool based on compiler AST transformation",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Alex-XJK/PrePrintExec",
